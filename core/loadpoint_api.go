@@ -21,6 +21,7 @@ type LoadPointSettingsAPI interface {
 	SetTargetSoC(int) error
 	GetMinSoC() int
 	SetMinSoC(int) error
+	GetCharging() bool
 }
 
 // LoadPointEnergyAPI is the external loadpoint API
@@ -107,6 +108,13 @@ func (lp *LoadPoint) SetMinSoC(soc int) error {
 	}
 
 	return nil
+}
+
+// GetCharging returns loadpoint charging status
+func (lp *LoadPoint) GetCharging() bool {
+	lp.Lock()
+	defer lp.Unlock()
+	return lp.charging
 }
 
 // HasChargeMeter determines if a physical charge meter is attached
