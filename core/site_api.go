@@ -63,3 +63,8 @@ func (site *Site) SetMinSoC(soc int) error {
 	}
 	return nil
 }
+
+// GetCharging returns loadpoint charging status
+func (site *Site) GetCharging() bool {
+	return site.loadpoints[0].GetCharging()
+}
