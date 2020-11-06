@@ -86,6 +86,7 @@ type LoadPoint struct {
 
 	// cached state
 	status        api.ChargeStatus // Charger status
+	remoteStatus  RemoteDemand     // External status demand
 	charging      bool             // Charging cycle
 	chargePower   float64          // Charging power
 	connectedTime time.Time        // Time when vehicle was connected
@@ -400,6 +401,14 @@ func (lp *LoadPoint) climateActive() bool {
 	}
 
 	return false
+}
+
+// remoteControlled returns true if remote control status is active
+func (lp *LoadPoint) remoteControlled(status RemoteDemand) bool {
+	lp.Lock()
+	defer lp.Unlock()
+
+	return lp.remoteStatus == status
 }
 
 // setActiveVehicle assigns currently active vehicle and configures soc estimator
@@ -745,6 +754,10 @@ func (lp *LoadPoint) Update(sitePower float64) {
 		}
 		err = lp.handler.Ramp(targetCurrent, true)
 
+	// OCPP
+	case lp.remoteControlled(RemoteHardDisable):
+		fallthrough
+
 	case mode == api.ModeOff:
 		err = lp.handler.Ramp(0, true)
 
@@ -762,6 +775,12 @@ func (lp *LoadPoint) Update(sitePower float64) {
 		var required bool // false
 		if targetCurrent == 0 && lp.climateActive() {
 			targetCurrent = lp.MinCurrent
+			required = true
+		}
+
+		// Sunny Home Manager
+		if lp.remoteControlled(RemoteSoftDisable) {
+			targetCurrent = 0
 			required = true
 		}
 
